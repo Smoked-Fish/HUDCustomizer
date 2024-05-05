@@ -1,0 +1,7 @@
+{
+  "Config.HUDCustomizer.EnableMod.Name": "Enable Mod",
+  "Config.HUDCustomizer.EnableMod.Description": "Enables the mod",
+
+  "Config.HUDCustomizer.ToggleHudKey.Name": "Toggle HUD Key",
+  "Config.HUDCustomizer.ToggleHudKey.Description": "Toggles the HUD on and off"
+}
