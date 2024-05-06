@@ -21,9 +21,9 @@ namespace HUDCustomizer.Framework.Patches
         internal DrawPatches(Harmony harmony) : base(harmony) { }
         internal void Apply()
         {
-            Patch(PatchType.Prefix, typeof(Game1), "drawHUD", nameof(DrawHudPrefix));
+            //Patch(PatchType.Prefix, typeof(Game1), "drawHUD", nameof(DrawHudPrefix));
             Patch(PatchType.Prefix, typeof(DayTimeMoneyBox), nameof(DayTimeMoneyBox.draw), nameof(DrawDayTimeMoneyBoxPrefix), [typeof(SpriteBatch)]);
-            Patch(PatchType.Prefix, typeof(Toolbar), nameof(Toolbar.draw), nameof(DrawToolbarPrefix), [typeof(SpriteBatch)]);
+            //Patch(PatchType.Prefix, typeof(Toolbar), nameof(Toolbar.draw), nameof(DrawToolbarPrefix), [typeof(SpriteBatch)]);
         }
         private static bool DrawHudPrefix(Game1 __instance)
         {
@@ -252,6 +252,8 @@ namespace HUDCustomizer.Framework.Patches
         private static bool DrawDayTimeMoneyBoxPrefix(DayTimeMoneyBox __instance, SpriteBatch b)
         {
             if (!ModEntry.modConfig.EnableMod) return true;
+            if (ModEntry.modConfig.DisableDayTimeMoneyBox) return false;
+
 
             // Get the appropriate font based on the game's language
             SpriteFont font = ((LocalizedContentManager.CurrentLanguageCode == LocalizedContentManager.LanguageCode.ko) ? Game1.smallFont : Game1.dialogueFont);
@@ -526,6 +528,8 @@ namespace HUDCustomizer.Framework.Patches
         private static bool DrawToolbarPrefix(Toolbar __instance, SpriteBatch b)
         {
             if (!ModEntry.modConfig.EnableMod) return true;
+
+            if (!ModEntry.modConfig.ToggleHudKey.IsDown()) return true;
 
             if (Game1.activeClickableMenu != null)
             {

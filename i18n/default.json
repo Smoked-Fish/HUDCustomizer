@@ -3,5 +3,8 @@
   "Config.HUDCustomizer.EnableMod.Description": "Enables the mod",
 
   "Config.HUDCustomizer.ToggleHudKey.Name": "Toggle HUD Key",
-  "Config.HUDCustomizer.ToggleHudKey.Description": "Toggles the HUD on and off"
+  "Config.HUDCustomizer.ToggleHudKey.Description": "Toggles the HUD on and off",
+
+  "Config.HUDCustomizer.DisableDayTimeMoneyBox.Name": "Disable Day/Time/Money HUD",
+  "Config.HUDCustomizer.DisableDayTimeMoneyBox.Description": "Toggles the HUD on the top left off"
 }

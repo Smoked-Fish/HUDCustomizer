@@ -45,7 +45,7 @@ namespace HUDCustomizer
 
             // Hook into GameLoop events
             helper.Events.GameLoop.GameLaunched += OnGameLaunched;
-            //helper.Events.Input.ButtonPressed += OnButtonPressed;
+            helper.Events.Input.ButtonPressed += OnButtonPressed;
         }
 
         private void OnGameLaunched(object sender, GameLaunchedEventArgs e)
@@ -57,22 +57,24 @@ namespace HUDCustomizer
 
                 AddOption(configApi, nameof(modConfig.EnableMod));
                 AddOption(configApi, nameof(modConfig.ToggleHudKey));
+                AddOption(configApi, nameof(modConfig.DisableDayTimeMoneyBox));
             }
         }
 
         private void OnButtonPressed(object sender, ButtonPressedEventArgs e) 
         {
+            if (!Context.IsWorldReady) return;
+
             if (modConfig.ToggleHudKey.JustPressed())
             {
-                if (Game1.displayHUD)
+                if (modConfig.DisableDayTimeMoneyBox)
                 {
-                    Game1.displayHUD = false;
+                    modConfig.DisableDayTimeMoneyBox = false;
                 }
                 else
                 {
-                    Game1.displayHUD = true;
+                    modConfig.DisableDayTimeMoneyBox = true;
                 }
-                monitor.Log(Game1.displayHUD.ToString(), LogLevel.Debug);
             }
         }
 
