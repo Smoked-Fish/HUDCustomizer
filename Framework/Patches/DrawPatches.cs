@@ -13,6 +13,7 @@ using StardewValley.BellsAndWhistles;
 using StardewValley.Logging;
 using System.Reflection;
 using System.Text;
+using System.Collections;
 
 namespace HUDCustomizer.Framework.Patches
 {
@@ -23,7 +24,7 @@ namespace HUDCustomizer.Framework.Patches
         {
             //Patch(PatchType.Prefix, typeof(Game1), "drawHUD", nameof(DrawHudPrefix));
             Patch(PatchType.Prefix, typeof(DayTimeMoneyBox), nameof(DayTimeMoneyBox.draw), nameof(DrawDayTimeMoneyBoxPrefix), [typeof(SpriteBatch)]);
-            //Patch(PatchType.Prefix, typeof(Toolbar), nameof(Toolbar.draw), nameof(DrawToolbarPrefix), [typeof(SpriteBatch)]);
+            Patch(PatchType.Prefix, typeof(Toolbar), nameof(Toolbar.draw), nameof(DrawToolbarPrefix), [typeof(SpriteBatch)]);
         }
         private static bool DrawHudPrefix(Game1 __instance)
         {
@@ -527,21 +528,25 @@ namespace HUDCustomizer.Framework.Patches
 
         private static bool DrawToolbarPrefix(Toolbar __instance, SpriteBatch b)
         {
-            if (!ModEntry.modConfig.EnableMod) return true;
+            if (!ModEntry.modConfig.EnableMod || !ModEntry.modConfig.ToggleHudKey.IsDown()) return true;
+            if (Game1.activeClickableMenu != null) return false;
 
-            if (!ModEntry.modConfig.ToggleHudKey.IsDown()) return true;
+            float scaleX = 0.5f;
+            float scaleY = 0.5f;
 
-            if (Game1.activeClickableMenu != null)
-            {
-                return false;
-            }
+            float toolbarWidth = 12 * 64 * scaleX;
+            float startX = (Game1.uiViewport.Width - toolbarWidth) / 2;
+            int widthDifference = (int)((800 - (800 * scaleX)) / 2);
+            int heightDifference = (int)((96 - (96 * scaleY)) / 2);
+            float desiredY = __instance.yPositionOnScreen - (96 * scaleY);
+            int adjustedX = (int)(Game1.uiViewport.Width / 2 - 384 - 16 + widthDifference);
+            int adjustedY = (int)(__instance.yPositionOnScreen - heightDifference);
 
-            // Get player's global and local positions
+
+
             Point playerGlobalPos = Game1.player.StandingPixel;
             Vector2 playerLocalVec = Game1.GlobalToLocal(globalPosition: new Vector2(playerGlobalPos.X, playerGlobalPos.Y), viewport: Game1.viewport);
             bool alignTop;
-            
-            // Check if toolbar toggle is pinned
             if (Game1.options.pinToolbarToggle)
             {
                 alignTop = false;
@@ -556,8 +561,6 @@ namespace HUDCustomizer.Framework.Patches
                 alignTop = ((playerLocalVec.Y > (float)(Game1.viewport.Height / 2 + 64)) ? true : false);
                 __instance.transparency = 1f;
             }
-
-            // Calculate toolbar position based on alignment
             int margin = Utility.makeSafeMarginY(8);
             int num = __instance.yPositionOnScreen;
             if (!alignTop)
@@ -568,108 +571,110 @@ namespace HUDCustomizer.Framework.Patches
             }
             else
             {
-                __instance.yPositionOnScreen = 112;
+                __instance.yPositionOnScreen = (int)(112 * scaleY);
                 __instance.yPositionOnScreen -= 8;
                 __instance.yPositionOnScreen += margin;
             }
-
-            // Update button bounds if toolbar position changed
-            if (num != __instance.yPositionOnScreen)
+            //if (num != __instance.yPositionOnScreen)
+            for (int k = 0; k < 12; k++)
             {
-                for (int k = 0; k < 12; k++)
-                {
-                    __instance.buttons[k].bounds.Y = __instance.yPositionOnScreen - 96 + 8;
-                }
+                __instance.buttons[k].bounds.Y = (int)desiredY;
+                __instance.buttons[k].bounds.X = (int)(startX + k * 64 * scaleX);
+
+                __instance.buttons[k].bounds.Width = (int)(64 * scaleX);
+                __instance.buttons[k].bounds.Height = (int)(64 * scaleY);
+
+                Rectangle buttonBounds = __instance.buttons[k].bounds;
+                b.Draw(Game1.staminaRect, new Rectangle(buttonBounds.X, buttonBounds.Y, buttonBounds.Width, buttonBounds.Height), new Color(255, 0, 0, 100));
             }
 
-            float scaleX = 0.5f; // Example scale factor for width
-            float scaleY = 0.5f; // Example scale factor for height
-
-            // Calculate the total width of the toolbar
-            float toolbarWidth = 12 * 64 * scaleX; // Assuming initial spacing is 64 units
-
-            // Calculate the starting position to center the toolbar horizontally
-            float startX = (Game1.uiViewport.Width - toolbarWidth) / 2;
-
-            // Calculate the difference in size due to scaling
-            int widthDifference = (int)((800 - (800 * scaleX)) / 2); // Difference between original and scaled width
-            int heightDifference = (int)((96 - (96 * scaleY)) / 2); // Difference between original and scaled height
-
-            // Calculate the desired vertical position for the toolbar buttons
-            float desiredY = Game1.uiViewport.Height - ((96 * scaleY));
-
-            // Adjust the position of the texture box based on the scaling factor
-            int adjustedX = (int)(Game1.uiViewport.Width / 2 - 384 - 16 + widthDifference);
-            int adjustedY = (int)(__instance.yPositionOnScreen - heightDifference);
-
-            // Draw toolbar background
             IClickableMenu.drawTextureBox(
                 b,
                 Game1.menuTexture,
                 __instance.toolbarTextSource,
                 adjustedX,
-                (int)(Game1.uiViewport.Height - (96 * scaleY)) - 8,
-                (int)(800 * scaleX), // Adjusted width
-                (int)(96 * scaleY), // Adjusted height
+                (int)desiredY - 8,
+                (int)(800 * scaleX),
+                (int)(96 * scaleY),
                 Color.White * __instance.transparency,
                 scaleX,
                 drawShadow: false
             );
 
-            // Draw toolbar buttons and items
             for (int j = 0; j < 12; j++)
             {
-                // Calculate the position of the button
                 Vector2 buttonPosition = new Vector2(startX + j * 64 * scaleX, desiredY);
 
-                // Calculate the position of the item
-                Vector2 itemPosition = new Vector2(startX + j * 64 * scaleX, desiredY);
+                // Calculate the position of the item centered inside the button
+                Vector2 itemPosition = buttonPosition + new Vector2((64 * scaleX - 64) / 2, (64 * scaleY - 64) / 2);
+                float itemScale = Math.Min(scaleX, scaleY);
 
-                // Draw the button
+                // Calculate the position of the quality indicator
+                Vector2 qualityPosition = buttonPosition + new Vector2(8 * scaleX, 52 * scaleY);
+
+
                 if (Game1.player.Items.Count > j && Game1.player.Items[j] != null)
                 {
-                    // Adjust the scale factor for the current button based on the toolbar's overall scale
-                    float buttonScale = Math.Max(1f, scaleY - 0.025f);
-
-                    // Draw the button
-                    Game1.player.Items[j].drawInMenu(b, itemPosition, (Game1.player.CurrentToolIndex == j) ? 0.9f : (buttonScale * 0.8f), __instance.transparency, 0.88f);
+                    if (Game1.player.Items[j].Category == -96) // If the item is a ring
+                    {
+                        // Adjust item position for rings
+                        itemPosition += new Vector2(16 * itemScale, 24 * itemScale);
+                    }
+                    Game1.player.Items[j].drawInMenu(b, 
+                        itemPosition, 
+                        (Game1.player.CurrentToolIndex == j) ? (itemScale * 0.9f) : (itemScale * 0.8f), 
+                        __instance.transparency, 
+                        0.88f, 
+                        StackDrawType.Hide);
                 }
 
-                // Draw the button texture
                 b.Draw(Game1.menuTexture,
-                       buttonPosition, // Position
-                       Game1.getSourceRectForStandardTileSheet(Game1.menuTexture, (Game1.player.CurrentToolIndex == j) ? 56 : 10),
-                       Color.White * __instance.transparency,
-                       0f,
-                       Vector2.Zero, // Origin
-                       new Vector2(scaleX, scaleY), // Scale
-                       SpriteEffects.None,
-                       1f);
+                    buttonPosition,
+                    Game1.getSourceRectForStandardTileSheet(Game1.menuTexture, (Game1.player.CurrentToolIndex == j) ? 56 : 10),
+                    Color.White * __instance.transparency,
+                    0f,
+                    Vector2.Zero,
+                    new Vector2(scaleX, scaleY),
+                    SpriteEffects.None,
+                    1f);
 
-                // Draw text if gamepad controls are disabled
                 if (!Game1.options.gamepadControls)
                 {
-                    b.DrawString(Game1.tinyFont, __instance.slotText[j], buttonPosition + new Vector2(4f, -8f), Color.DimGray * __instance.transparency);
+                    Vector2 textPosition = buttonPosition + new Vector2(4f, -8f);
+                    Color textColor = Color.DimGray * __instance.transparency;
+                    b.DrawString(Game1.tinyFont, __instance.slotText[j], textPosition, textColor);
                 }
+
+
+                if (Game1.player.Items.Count > j && Game1.player.Items[j] != null)
+                {
+                    if (Game1.player.Items[j].Quality > 0)
+                    {
+                        Rectangle qualityRect = (((int)Game1.player.Items[j].Quality < 4) ? new Rectangle(338 + ((int)Game1.player.Items[j].Quality - 1) * 8, 400, 8, 8) : new Rectangle(346, 392, 8, 8));
+                        Texture2D qualitySheet = Game1.mouseCursors;
+                        float yOffset = (((int)Game1.player.Items[j].Quality < 4) ? 0f : (((float)Math.Cos((double)Game1.currentGameTime.TotalGameTime.Milliseconds * Math.PI / 512.0) + 1f) * 0.05f));
+                        b.Draw(qualitySheet, qualityPosition, qualityRect, Color.White * __instance.transparency, 0f,
+                            new Vector2(4f, 4f), 3f * itemScale * (1f + yOffset), SpriteEffects.None, 0.88f);
+                    }
+
+                    int drawnStack = Game1.player.Items[j].Stack;
+                    bool shouldDrawStackNumber = ((Game1.player.Items[j].maximumStackSize() > 1 && drawnStack > 1)) && (double)itemScale > 0.3 && drawnStack != int.MaxValue;
+                    if (Game1.player.Items[j].IsRecipe)
+                    {
+                        shouldDrawStackNumber = false;
+                    }
+                    if (shouldDrawStackNumber)
+                    {
+                        float scale_size = (Game1.player.CurrentToolIndex == j) ? (itemScale * 0.9f) : (itemScale * 0.8f);
+                        Vector2 stackPosition = (itemPosition + new Vector2((float)((64 + (widthDifference / 12)) - Utility.getWidthOfTinyDigitString(drawnStack, 3f * scale_size)) + 3f * scale_size, (64f + heightDifference) - 18 * scale_size + 1f) * itemScale);
+
+                        Utility.drawTinyDigits(drawnStack, b, stackPosition, 3f * scale_size, Math.Min(1f, 0.88f + 1E-06f), Color.White * __instance.transparency);
+                    }
+                }
+
+
             }
 
-            /*            // Draw toolbar items
-                        for (int i = 0; i < 12; i++)
-                        {
-                            // Adjust the scale factor for the current button based on the toolbar's overall scale
-                            float buttonScale = Math.Max(1f, scaleY - 0.025f);
-
-                            // Calculate the position of the button
-                            Vector2 toDraw = new Vector2(startX + i * 64 * toolbarScale, desiredY);
-
-                            // Draw the button
-                            if (Game1.player.Items.Count > i && Game1.player.Items[i] != null)
-                            {
-                                Game1.player.Items[i].drawInMenu(b, toDraw, (Game1.player.CurrentToolIndex == i) ? 0.9f : (buttonScale * 0.8f), __instance.transparency, 0.88f);
-                            }
-                        }*/
-
-            // Draw tooltip if hoverItem is not null
             if (__instance.hoverItem != null)
             {
                 IClickableMenu.drawToolTip(b, __instance.hoverItem.getDescription(), __instance.hoverItem.DisplayName, __instance.hoverItem);
