@@ -45,7 +45,7 @@ namespace HUDCustomizer
 
             // Hook into GameLoop events
             helper.Events.GameLoop.GameLaunched += OnGameLaunched;
-            helper.Events.Input.ButtonPressed += OnButtonPressed;
+            //helper.Events.Input.ButtonPressed += OnButtonPressed;
         }
 
         private void OnGameLaunched(object sender, GameLaunchedEventArgs e)
