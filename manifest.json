@@ -5,6 +5,7 @@
   "Description": "HUD Customizer.",
   "UniqueID": "Espy.HUDCustomizer",
   "EntryDll": "HUDCustomizer.dll",
+  "UpdateKeys": [ "Nexus:23704" ],
   "MinimumApiVersion": "4.0.0",
   "Dependencies": [
     {
