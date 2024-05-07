@@ -2,15 +2,12 @@
 using HarmonyLib;
 using HUDCustomizer.Framework.Interfaces;
 using HUDCustomizer.Framework.Managers;
-using HUDCustomizer.Framework.Patches;
 using HUDCustomizer.Framework.Patches.G1;
 using HUDCustomizer.Framework.Patches.Menus;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
-using StardewModdingAPI.Utilities;
 using StardewValley;
 using System;
-using System.Reflection;
 
 namespace HUDCustomizer
 {
