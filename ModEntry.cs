@@ -3,6 +3,8 @@ using HarmonyLib;
 using HUDCustomizer.Framework.Interfaces;
 using HUDCustomizer.Framework.Managers;
 using HUDCustomizer.Framework.Patches;
+using HUDCustomizer.Framework.Patches.G1;
+using HUDCustomizer.Framework.Patches.Menus;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewModdingAPI.Utilities;
@@ -40,12 +42,14 @@ namespace HUDCustomizer
             // Apply the patches
             var harmony = new Harmony(ModManifest.UniqueID);
 
-            new DrawPatches(harmony).Apply();
+            new Game1Patch(harmony).Apply();
+            new DayTimeMoneyBoxPatch(harmony).Apply();
+            new ToolbarPatch(harmony).Apply();
 
 
             // Hook into GameLoop events
             helper.Events.GameLoop.GameLaunched += OnGameLaunched;
-            //helper.Events.Input.ButtonPressed += OnButtonPressed;
+            helper.Events.Input.ButtonPressed += OnButtonPressed;
         }
 
         private void OnGameLaunched(object sender, GameLaunchedEventArgs e)
@@ -55,9 +59,34 @@ namespace HUDCustomizer
             {
                 configApi.Register(ModManifest, () => modConfig = new ModConfig(), () => Helper.WriteConfig(modConfig));
 
-                AddOption(configApi, nameof(modConfig.EnableMod));
-                AddOption(configApi, nameof(modConfig.ToggleHudKey));
-                AddOption(configApi, nameof(modConfig.DisableDayTimeMoneyBox));
+                configApi.AddPageLink(ModManifest, "DTMBoxPage", () => String.Concat("> ", I18n.Config_HUDCustomizer_DTMBox_Title()));
+                configApi.AddPageLink(ModManifest, "ToolbarPage", () => String.Concat("> ", I18n.Config_HUDCustomizer_Toolbar_Title()));
+                configApi.AddPageLink(ModManifest, "ResourceBarsPage", () => String.Concat("> ", I18n.Config_HUDCustomizer_ResourceBars_Title()));
+                configApi.AddPageLink(ModManifest, "BuffsPage", () => String.Concat("> ", I18n.Config_HUDCustomizer_Buffs_Title()));
+                configApi.AddPageLink(ModManifest, "OtherPage", () => String.Concat("> ", I18n.Config_HUDCustomizer_Other_Title()));
+
+                configApi.AddPage(ModManifest, "DTMBoxPage", I18n.Config_HUDCustomizer_DTMBox_Title);
+                configApi.AddKeybindList(ModManifest, () => modConfig.ToggleDTMBoxHUD, value => modConfig.ToggleDTMBoxHUD = value, I18n.Config_HUDCustomizer_ToggleDTMBoxHUD_Name, I18n.Config_HUDCustomizer_ToggleDTMBoxHUD_Description);
+                configApi.AddBoolOption(ModManifest, () => modConfig.DisableDTMBoxHUD, value => modConfig.DisableDTMBoxHUD = value, I18n.Config_HUDCustomizer_DisableDTMBoxHUD_Name, I18n.Config_HUDCustomizer_DisableDTMBoxHUD_Description);
+                configApi.AddNumberOption(ModManifest, () => modConfig.DTMBoxScale, value => modConfig.DTMBoxScale = value, I18n.Config_HUDCustomizer_DTMBoxScale_Name, I18n.Config_HUDCustomizer_DTMBoxScale_Description, 0f, 2f, 0.05f, value => value.ToString("0.00"));
+
+                configApi.AddPage(ModManifest, "ToolbarPage", I18n.Config_HUDCustomizer_DTMBox_Title);
+                configApi.AddKeybindList(ModManifest, () => modConfig.ToggleToolbarHUD, value => modConfig.ToggleToolbarHUD = value, I18n.Config_HUDCustomizer_ToggleToolbarHUD_Name, I18n.Config_HUDCustomizer_ToggleToolbarHUD_Description);
+                configApi.AddBoolOption(ModManifest, () => modConfig.DisableToolbarHUD, value => modConfig.DisableToolbarHUD = value, I18n.Config_HUDCustomizer_DisableToolbarHUD_Name, I18n.Config_HUDCustomizer_DisableToolbarHUD_Description);
+                configApi.AddNumberOption(ModManifest, () => modConfig.ToolbarScale, value => modConfig.ToolbarScale = value, I18n.Config_HUDCustomizer_ToolbarScale_Name, I18n.Config_HUDCustomizer_ToolbarScale_Description, 0f, 2f, 0.05f, value => value.ToString("0.00"));
+
+                configApi.AddPage(ModManifest, "ResourceBarsPage", I18n.Config_HUDCustomizer_ResourceBars_Title);
+                configApi.AddKeybindList(ModManifest, () => modConfig.ToggleResourceBarsHUD, value => modConfig.ToggleResourceBarsHUD = value, I18n.Config_HUDCustomizer_ToggleResourceBarsHUD_Name, I18n.Config_HUDCustomizer_ToggleResourceBarsHUD_Description);
+                configApi.AddBoolOption(ModManifest, () => modConfig.DisableResourceBarsHUD, value => modConfig.DisableResourceBarsHUD = value, I18n.Config_HUDCustomizer_DisableResourceBarsHUD_Name, I18n.Config_HUDCustomizer_DisableResourceBarsHUD_Description);
+                configApi.AddNumberOption(ModManifest, () => modConfig.ResourceBarsScale, value => modConfig.ResourceBarsScale = value, I18n.Config_HUDCustomizer_ResourceBarsScale_Name, I18n.Config_HUDCustomizer_ResourceBarsScale_Description, 0f, 2f, 0.05f, value => value.ToString("0.00"));
+
+                configApi.AddPage(ModManifest, "BuffsPage", I18n.Config_HUDCustomizer_Buffs_Title);
+                configApi.AddKeybindList(ModManifest, () => modConfig.ToggleBuffsHUD, value => modConfig.ToggleBuffsHUD = value, I18n.Config_HUDCustomizer_ToggleBuffsHUD_Name, I18n.Config_HUDCustomizer_ToggleBuffsHUD_Description);
+                configApi.AddBoolOption(ModManifest, () => modConfig.DisableBuffsHUD, value => modConfig.DisableBuffsHUD = value, I18n.Config_HUDCustomizer_DisableBuffsHUD_Name, I18n.Config_HUDCustomizer_DisableBuffsHUD_Description);
+                configApi.AddNumberOption(ModManifest, () => modConfig.BuffsScale, value => modConfig.BuffsScale = value, I18n.Config_HUDCustomizer_BuffsScale_Name, I18n.Config_HUDCustomizer_BuffsScale_Description, 0f, 2f, 0.05f, value => value.ToString("0.00"));
+
+                configApi.AddPage(ModManifest, "OtherPage", I18n.Config_HUDCustomizer_Other_Title);
+                configApi.AddBoolOption(ModManifest, () => modConfig.EnableMod, value => modConfig.EnableMod = value, I18n.Config_HUDCustomizer_EnableMod_Name, I18n.Config_HUDCustomizer_EnableMod_Description);
             }
         }
 
@@ -65,72 +94,21 @@ namespace HUDCustomizer
         {
             if (!Context.IsWorldReady) return;
 
-            if (modConfig.ToggleHudKey.JustPressed())
+            if (modConfig.ToggleDTMBoxHUD.JustPressed())
             {
-                if (modConfig.DisableDayTimeMoneyBox)
-                {
-                    modConfig.DisableDayTimeMoneyBox = false;
-                }
-                else
-                {
-                    modConfig.DisableDayTimeMoneyBox = true;
-                }
+                modConfig.ToggleDTMBoxHUDState();
             }
-        }
-
-        private void AddOption(IGenericModConfigMenuApi configApi, string name)
-        {
-            PropertyInfo propertyInfo = typeof(ModConfig).GetProperty(name);
-            if (propertyInfo == null)
+            if (modConfig.ToggleToolbarHUD.JustPressed())
             {
-                Monitor.Log($"Error: Property '{name}' not found in ModConfig.", LogLevel.Error);
-                return;
+                modConfig.ToggleToolbarHUDState();
             }
-
-            Func<string> getName = () => I18n.GetByKey($"Config.{typeof(ModEntry).Namespace}.{name}.Name");
-            Func<string> getDescription = () => I18n.GetByKey($"Config.{typeof(ModEntry).Namespace}.{name}.Description");
-
-            if (getName == null || getDescription == null)
+            if (modConfig.ToggleResourceBarsHUD.JustPressed())
             {
-                Monitor.Log($"Error: Localization keys for '{name}' not found.", LogLevel.Error);
-                return;
+                modConfig.ToggleResourceBarsHUDState();
             }
-
-            var getterMethod = propertyInfo.GetGetMethod();
-            var setterMethod = propertyInfo.GetSetMethod();
-
-            if (getterMethod == null || setterMethod == null)
+            if (modConfig.ToggleBuffsHUD.JustPressed())
             {
-                Monitor.Log($"Error: The get/set methods are null for property '{name}'.", LogLevel.Error);
-                return;
-            }
-
-            var getter = Delegate.CreateDelegate(typeof(Func<>).MakeGenericType(propertyInfo.PropertyType), modConfig, getterMethod);
-            var setter = Delegate.CreateDelegate(typeof(Action<>).MakeGenericType(propertyInfo.PropertyType), modConfig, setterMethod);
-
-            switch (propertyInfo.PropertyType.Name)
-            {
-                case nameof(Boolean):
-                    configApi.AddBoolOption(ModManifest, (Func<bool>)getter, (Action<bool>)setter, getName, getDescription);
-                    break;
-                case nameof(Int32):
-                    configApi.AddNumberOption(ModManifest, (Func<int>)getter, (Action<int>)setter, getName, getDescription);
-                    break;
-                case nameof(Single):
-                    configApi.AddNumberOption(ModManifest, (Func<float>)getter, (Action<float>)setter, getName, getDescription);
-                    break;
-                case nameof(String):
-                    configApi.AddTextOption(ModManifest, (Func<string>)getter, (Action<string>)setter, getName, getDescription);
-                    break;
-                case nameof(SButton):
-                    configApi.AddKeybind(ModManifest, (Func<SButton>)getter, (Action<SButton>)setter, getName, getDescription);
-                    break;
-                case nameof(KeybindList):
-                    configApi.AddKeybindList(ModManifest, (Func<KeybindList>)getter, (Action<KeybindList>)setter, getName, getDescription);
-                    break;
-                default:
-                    Monitor.Log($"Error: Unsupported property type '{propertyInfo.PropertyType.Name}' for '{name}'.", LogLevel.Error);
-                    break;
+                modConfig.ToggleBuffsHUDState();
             }
         }
     }
